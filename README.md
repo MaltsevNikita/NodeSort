@@ -1,3 +1,3 @@
-Для запуска скрипта:
+Launch
 
 node index.js ../test ../test2
