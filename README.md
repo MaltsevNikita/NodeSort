@@ -1,3 +1,3 @@
 Launch
 
-node index.js ../test ../test2
+node index.js ./test ./test2
