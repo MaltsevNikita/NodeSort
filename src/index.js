@@ -1,8 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const walk = require('./modules/walk');
+const walkDir = require('./modules/walk');
 const copyFile = require('./modules/copyFile');
-const removeFolder = require('./modules/removeFolder');
 
 const inputFolder = process.argv[2];
 const outputFolder = process.argv[3];
@@ -15,26 +14,6 @@ const checkOrCreateFolder = function (dirName) {
   }
 };
 
-// Вызывается после копирования всех файлов
-const done = function (err) {
-  if (err) throw err;
-  console.log('Все файлы скопированы!');
-
-  if (isShouldRemoveInputFolder) {
-    removeFolder(inputFolder);
-    console.log('Исходная папка удалена!');
-  }
-};
-
-// Вызывается когда walk находит очередной файл
-const callback = function (filePath, cb) {
-  const fileName = path.basename(filePath);
-  const folderName = fileName[0].toUpperCase();
-  const newFilePath = path.resolve(outputFolder, `./${folderName}/${fileName}`);
-  checkOrCreateFolder(path.resolve(outputFolder, `./${folderName}`));
-  copyFile(filePath, path.resolve(outputFolder, newFilePath), cb);
-};
-
 // Проверяем передачу параметров
 if (!inputFolder || !outputFolder) {
   throw new Error('Не указаны пути к выходной или выходной папке!');
@@ -43,5 +22,18 @@ if (!inputFolder || !outputFolder) {
   checkOrCreateFolder(outputFolder);
 }
 
-// Запускаем нашу главную функцию прохода по каталогу
-walk(inputFolder, done, callback);
+const callbackOnFolder = (curPath) => {
+  fs.rmdirSync(curPath); 
+}
+
+const callbackOnFile = (curPath) => {
+  const fileName = path.basename(curPath);
+  const folderName = fileName[0].toUpperCase();
+  const newFilePath = path.resolve(outputFolder, `./${folderName}/${fileName}`);
+  checkOrCreateFolder(path.resolve(outputFolder, `./${folderName}`));
+  copyFile(curPath, path.resolve(outputFolder, newFilePath), () => {
+    isShouldRemoveInputFolder && fs.unlinkSync(curPath);
+  })
+}
+
+walkDir(inputFolder, isShouldRemoveInputFolder ? callbackOnFolder : null, callbackOnFile)

@@ -1,32 +1,21 @@
 const fs = require('fs');
 
-const walk = function (dir, done, callback) {
-  fs.readdir(dir, function (err, list) {
-    if (err) return done(err,null);
-    let i = 0;
+const walkDir = function (path, callbackOnFolder, callbackOnFile) {
 
-    const next = function () {
-      var filePath = list[i++];
+  let callbacknFolderFn = callbackOnFolder || function() {};
 
-      if (!filePath) return done(null,null);
+  fs.readdirSync(path).forEach(function (file) {
 
-      filePath = dir + '/' + filePath;
-
-      fs.stat(filePath, function (_, stat) {
-        if (stat && stat.isDirectory()) {
-          walk(filePath, function (_) {
-            next();
-          }, callback);
-        } else {
-          callback(filePath, next);
-        }
-      });
-    };
-
-    next();
+    var curPath = path + '/' + file;
+    fs.lstatSync(curPath).isDirectory() ?
+      walkDir(curPath, callbackOnFolder, callbackOnFile) 
+      : 
+      callbackOnFile(curPath);
+    
   });
 
-  //fs.rmdirSync(path);
+  callbacknFolderFn(path);
+
 };
 
-module.exports = walk;
+module.exports = walkDir;
